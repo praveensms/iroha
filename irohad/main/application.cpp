@@ -264,11 +264,17 @@ void Irohad::initMstProcessor() {
  * Initializing transaction command service
  */
 void Irohad::initTransactionCommandService() {
-  auto tx_processor =
-      std::make_shared<TransactionProcessorImpl>(pcs, mst_processor);
+  auto status_bus =
+      std::static_pointer_cast<StatusBus>(std::make_shared<StatusBusImpl>());
+  auto tx_processor = std::make_shared<TransactionProcessorImpl>(
+      pcs, mst_processor, status_bus);
 
-  command_service = std::make_shared<::torii::CommandService>(
-      tx_processor, storage, std::chrono::seconds(1), 2 * proposal_delay_);
+  command_service =
+      std::make_shared<::torii::CommandService>(tx_processor,
+                                                storage,
+                                                status_bus,
+                                                std::chrono::seconds(1),
+                                                2 * proposal_delay_);
 
   log_->info("[Init] => command service");
 }

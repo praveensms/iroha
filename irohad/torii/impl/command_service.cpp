@@ -36,23 +36,18 @@ namespace torii {
   CommandService::CommandService(
       std::shared_ptr<iroha::torii::TransactionProcessor> tx_processor,
       std::shared_ptr<iroha::ametsuchi::Storage> storage,
+      std::shared_ptr<iroha::torii::StatusBus> status_bus,
       std::chrono::milliseconds initial_timeout,
       std::chrono::milliseconds nonfinal_timeout)
       : tx_processor_(tx_processor),
         storage_(storage),
+        status_bus_(status_bus),
         initial_timeout_(initial_timeout),
         nonfinal_timeout_(nonfinal_timeout),
         cache_(std::make_shared<CacheType>()),
-        // merge with mutex, since notifications can be made from different
-        // threads
-        // TODO 11.07.2018 andrei rework status handling with event bus IR-1517
-        responses_(tx_processor_->transactionNotifier().merge(
-            rxcpp::serialize_one_worker(
-                rxcpp::schedulers::make_current_thread()),
-            stateless_notifier_.get_observable())),
         log_(logger::log("CommandService")) {
     // Notifier for all clients
-    responses_.subscribe([this](auto iroha_response) {
+    status_bus_->statuses().subscribe([this](auto iroha_response) {
       // find response for this tx in cache; if status of received response
       // isn't "greater" than cached one, dismiss received one
       auto proto_response =
@@ -270,7 +265,8 @@ namespace torii {
                   .build()
                   .getTransport();
             }())));
-    return responses_
+    return status_bus_
+        ->statuses()
         // prepend initial status
         .start_with(initial_status)
         // select statuses with requested hash
@@ -372,10 +368,7 @@ namespace torii {
                 who,
                 hash.hex(),
                 response.tx_status());
-    // transactions can be handled from multiple threads, therefore a lock is
-    // required
-    std::lock_guard<std::mutex> lock(stateless_tx_status_notifier_mutex_);
-    stateless_notifier_.get_subscriber().on_next(
+    status_bus_->publish(
         std::make_shared<shared_model::proto::TransactionResponse>(
             std::move(response)));
   }

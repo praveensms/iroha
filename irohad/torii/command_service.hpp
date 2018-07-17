@@ -29,6 +29,7 @@
 #include "endpoint.pb.h"
 #include "logger/logger.hpp"
 #include "torii/processor/transaction_processor.hpp"
+#include "torii/status_bus_impl.hpp"
 
 namespace torii {
   /**
@@ -40,12 +41,14 @@ namespace torii {
      * Creates a new instance of CommandService
      * @param tx_processor - processor of received transactions
      * @param storage - to query transactions outside the cache
+     * @param status_bus is a common notifier for tx statuses
      * @param initial_timeout - streaming timeout when tx is not received
      * @param nonfinal_timeout - streaming timeout when tx is being processed
      */
     CommandService(
         std::shared_ptr<iroha::torii::TransactionProcessor> tx_processor,
         std::shared_ptr<iroha::ametsuchi::Storage> storage,
+        std::shared_ptr<iroha::torii::StatusBus> status_bus,
         std::chrono::milliseconds initial_timeout,
         std::chrono::milliseconds nonfinal_timeout);
 
@@ -161,28 +164,10 @@ namespace torii {
 
     std::shared_ptr<iroha::torii::TransactionProcessor> tx_processor_;
     std::shared_ptr<iroha::ametsuchi::Storage> storage_;
+    std::shared_ptr<iroha::torii::StatusBus> status_bus_;
     std::chrono::milliseconds initial_timeout_;
     std::chrono::milliseconds nonfinal_timeout_;
     std::shared_ptr<CacheType> cache_;
-
-    /**
-     * Mutex for propagating stateless validation status
-     */
-    std::mutex stateless_tx_status_notifier_mutex_;
-
-    /**
-     * Subject with stateless validation statuses
-     */
-    rxcpp::subjects::subject<
-        std::shared_ptr<shared_model::interface::TransactionResponse>>
-        stateless_notifier_;
-
-    /**
-     * Observable with all transaction statuses
-     */
-    rxcpp::observable<
-        std::shared_ptr<shared_model::interface::TransactionResponse>>
-        responses_;
 
     logger::Logger log_;
   };

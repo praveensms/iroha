@@ -85,8 +85,10 @@ class ClientServerTest : public testing::Test {
     EXPECT_CALL(*mst, onExpiredTransactionsImpl())
         .WillRepeatedly(Return(mst_expired_notifier.get_observable()));
 
+    auto status_bus = std::make_shared<iroha::torii::StatusBusImpl>();
     auto tx_processor =
-        std::make_shared<iroha::torii::TransactionProcessorImpl>(pcsMock, mst);
+        std::make_shared<iroha::torii::TransactionProcessorImpl>(
+            pcsMock, mst, status_bus);
 
     auto pb_tx_factory =
         std::make_shared<iroha::model::converters::PbTransactionFactory>();
@@ -100,8 +102,11 @@ class ClientServerTest : public testing::Test {
 
     //----------- Server run ----------------
     runner
-        ->append(std::make_unique<torii::CommandService>(
-            tx_processor, storage, initial_timeout, nonfinal_timeout))
+        ->append(std::make_unique<torii::CommandService>(tx_processor,
+                                                         storage,
+                                                         status_bus,
+                                                         initial_timeout,
+                                                         nonfinal_timeout))
         .append(std::make_unique<torii::QueryService>(qpi))
         .run()
         .match(

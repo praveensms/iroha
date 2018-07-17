@@ -44,14 +44,6 @@ namespace iroha {
           std::shared_ptr<shared_model::interface::Transaction>
               transaction) = 0;
 
-      /**
-       * Subscribers will be notified with transaction status
-       * @return observable for subscribing
-       */
-      virtual rxcpp::observable<
-          std::shared_ptr<shared_model::interface::TransactionResponse>>
-      transactionNotifier() = 0;
-
       virtual ~TransactionProcessor() = default;
     };
   }  // namespace torii

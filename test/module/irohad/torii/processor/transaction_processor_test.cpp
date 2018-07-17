@@ -15,6 +15,7 @@
 #include "module/shared_model/builders/protobuf/test_proposal_builder.hpp"
 #include "module/shared_model/builders/protobuf/test_transaction_builder.hpp"
 #include "torii/processor/transaction_processor_impl.hpp"
+#include "torii/status_bus_impl.hpp"
 
 using namespace iroha;
 using namespace iroha::network;
@@ -43,7 +44,8 @@ class TransactionProcessorTest : public ::testing::Test {
     EXPECT_CALL(*mp, onExpiredTransactionsImpl())
         .WillRepeatedly(Return(mst_expired_notifier.get_observable()));
 
-    tp = std::make_shared<TransactionProcessorImpl>(pcs, mp);
+    status_bus = std::make_shared<StatusBusImpl>();
+    tp = std::make_shared<TransactionProcessorImpl>(pcs, mp, status_bus);
   }
 
   auto base_tx() {
@@ -80,6 +82,7 @@ class TransactionProcessorTest : public ::testing::Test {
   rxcpp::subjects::subject<iroha::DataType> mst_expired_notifier;
 
   std::shared_ptr<MockPeerCommunicationService> pcs;
+  std::shared_ptr<StatusBus> status_bus;
   std::shared_ptr<TransactionProcessorImpl> tp;
   std::shared_ptr<MockMstProcessor> mp;
 
@@ -114,7 +117,7 @@ TEST_F(TransactionProcessorTest, TransactionProcessorOnProposalTest) {
   }
 
   auto wrapper =
-      make_test_subscriber<CallExact>(tp->transactionNotifier(), proposal_size);
+      make_test_subscriber<CallExact>(status_bus->statuses(), proposal_size);
   wrapper.subscribe([this](auto response) {
     status_map[response->transactionHash()] = response;
   });
@@ -156,7 +159,7 @@ TEST_F(TransactionProcessorTest, TransactionProcessorBlockCreatedTest) {
   }
 
   auto wrapper = make_test_subscriber<CallExact>(
-      tp->transactionNotifier(),
+      status_bus->statuses(),
       txs.size() * 2);  // every transaction is notified that it is stateless
                         // valid and  then stateful valid
   wrapper.subscribe([this](auto response) {
@@ -219,7 +222,7 @@ TEST_F(TransactionProcessorTest, TransactionProcessorOnCommitTest) {
   }
 
   auto wrapper = make_test_subscriber<CallExact>(
-      tp->transactionNotifier(),
+      status_bus->statuses(),
       txs.size() * 3);  // evey transaction is notified that it is first
                         // stateless valid, then stateful valid and
                         // eventually committed
@@ -288,7 +291,7 @@ TEST_F(TransactionProcessorTest, TransactionProcessorInvalidTxsTest) {
   }
 
   auto wrapper = make_test_subscriber<CallExact>(
-      tp->transactionNotifier(),
+      status_bus->statuses(),
       proposal_size * 2
           + block_size);  // For all transactions from proposal
                           // transaction notifier will notified
@@ -401,7 +404,7 @@ TEST_F(TransactionProcessorTest, MultisigExpired) {
                         generateKeypair())
                 .finish());
 
-  auto wrapper = make_test_subscriber<CallExact>(tp->transactionNotifier(), 1);
+  auto wrapper = make_test_subscriber<CallExact>(status_bus->statuses(), 1);
   wrapper.subscribe([](auto response) {
     ASSERT_NO_THROW(
         boost::apply_visitor(framework::SpecifiedVisitor<
