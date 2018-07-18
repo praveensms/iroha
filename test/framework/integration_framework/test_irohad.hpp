@@ -46,7 +46,8 @@ namespace integration_framework {
                  vote_delay,
                  load_delay,
                  keypair,
-                 is_mst_supported) {}
+                 is_mst_supported,
+                 true) {}
 
     auto &getCommandService() {
       return command_service;

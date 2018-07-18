@@ -70,6 +70,7 @@ class Irohad {
    * peer
    * @param keypair - public and private keys for crypto signer
    * @param is_mst_supported - enable or disable mst processing support
+   * @param is_synced - minimize thread number
    */
   Irohad(const std::string &block_store_dir,
          const std::string &pg_conn,
@@ -80,7 +81,8 @@ class Irohad {
          std::chrono::milliseconds vote_delay,
          std::chrono::milliseconds load_delay,
          const shared_model::crypto::Keypair &keypair,
-         bool is_mst_supported);
+         bool is_mst_supported,
+         bool is_synced = false);
 
   /**
    * Initialization of whole objects in system
@@ -154,6 +156,7 @@ class Irohad {
   std::chrono::milliseconds vote_delay_;
   std::chrono::milliseconds load_delay_;
   bool is_mst_supported_;
+  const bool is_synced_;
 
   // ------------------------| internal dependencies |-------------------------
 

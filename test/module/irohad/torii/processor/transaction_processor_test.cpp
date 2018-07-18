@@ -44,7 +44,7 @@ class TransactionProcessorTest : public ::testing::Test {
     EXPECT_CALL(*mp, onExpiredTransactionsImpl())
         .WillRepeatedly(Return(mst_expired_notifier.get_observable()));
 
-    status_bus = std::make_shared<StatusBusImpl>();
+    status_bus = std::make_shared<StatusBusImpl>(true);
     tp = std::make_shared<TransactionProcessorImpl>(pcs, mp, status_bus);
   }
 
@@ -136,8 +136,6 @@ TEST_F(TransactionProcessorTest, TransactionProcessorOnProposalTest) {
 
   prop_notifier.get_subscriber().on_next(proposal);
   prop_notifier.get_subscriber().on_completed();
-  using namespace std::chrono_literals;
-  std::this_thread::sleep_for(0.5s);
 
   ASSERT_TRUE(wrapper.validate());
 
@@ -200,8 +198,6 @@ TEST_F(TransactionProcessorTest, TransactionProcessorBlockCreatedTest) {
       std::shared_ptr<shared_model::interface::Block>(clone(block)));
   // Note blocks_notifier hasn't invoked on_completed, so
   // transactions are not commited
-  using namespace std::chrono_literals;
-  std::this_thread::sleep_for(0.5s);
 
   ASSERT_TRUE(wrapper.validate());
 
@@ -260,8 +256,6 @@ TEST_F(TransactionProcessorTest, TransactionProcessorOnCommitTest) {
   Commit single_commit = rxcpp::observable<>::just(
       std::shared_ptr<shared_model::interface::Block>(clone(block)));
   commit_notifier.get_subscriber().on_next(single_commit);
-  using namespace std::chrono_literals;
-  std::this_thread::sleep_for(0.5s);
 
   ASSERT_TRUE(wrapper.validate());
 
@@ -338,8 +332,6 @@ TEST_F(TransactionProcessorTest, TransactionProcessorInvalidTxsTest) {
   Commit single_commit = rxcpp::observable<>::just(
       std::shared_ptr<shared_model::interface::Block>(clone(block)));
   commit_notifier.get_subscriber().on_next(single_commit);
-  using namespace std::chrono_literals;
-  std::this_thread::sleep_for(0.5s);
   ASSERT_TRUE(wrapper.validate());
 
   {
@@ -421,8 +413,6 @@ TEST_F(TransactionProcessorTest, MultisigExpired) {
   });
   tp->transactionHandle(tx);
   mst_expired_notifier.get_subscriber().on_next(tx);
-  using namespace std::chrono_literals;
-  std::this_thread::sleep_for(0.5s);
 
   ASSERT_TRUE(wrapper.validate());
 }

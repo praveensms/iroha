@@ -3,32 +3,40 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/**
- * Copyright Soramitsu Co., Ltd. All Rights Reserved.
- * SPDX-License-Identifier: Apache-2.0
- */
-
 #include "torii/status_bus_impl.hpp"
 
 namespace iroha {
   namespace torii {
-    StatusBusImpl::StatusBusImpl()
-        : is_active_(true), worker_([this] {
-            StatusBus::Objects obj;
-            while (this->is_active_) {
-              while (not this->q_.empty() and this->q_.try_pop(obj)) {
-                this->subject_.get_subscriber().on_next(obj);
-              }
-            }
-          }) {}
+    StatusBusImpl::StatusBusImpl(bool is_sync)
+        : is_sync_(is_sync), is_active_(true) {
+      if (not is_sync_) {
+        worker_ = std::thread([this] {
+          do {
+            this->update();
+          } while (this->is_active_);
+        });
+      }
+    }
 
     StatusBusImpl::~StatusBusImpl() {
       is_active_ = false;
-      worker_.join();
+      if (not is_sync_) {
+        worker_.join();
+      }
     }
 
     void StatusBusImpl::publish(StatusBus::Objects resp) {
       q_.push(std::move(resp));
+      if (is_sync_) {
+        std::lock_guard<std::mutex> lock(m_);
+        update();
+      }
+    }
+
+    void StatusBusImpl::update() {
+      while (not q_.empty() and q_.try_pop(obj_)) {
+        subject_.get_subscriber().on_next(obj_);
+      }
     }
 
     rxcpp::observable<StatusBus::Objects> StatusBusImpl::statuses() {
