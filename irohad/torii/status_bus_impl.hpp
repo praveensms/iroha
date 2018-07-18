@@ -8,21 +8,27 @@
 
 #include "torii/status_bus.hpp"
 
-#include <mutex>
+#include <atomic>
+#include <thread>
+
+#include <tbb/concurrent_queue.h>
 
 namespace iroha {
   namespace torii {
     class StatusBusImpl : public StatusBus {
      public:
       StatusBusImpl();
+      ~StatusBusImpl();
 
       void publish(StatusBus::Objects) override;
       rxcpp::observable<StatusBus::Objects> statuses() override;
 
       rxcpp::subjects::subject<StatusBus::Objects> statuses_;
-      rxcpp::observe_on_one_worker coordinatior;
 
-      std::mutex m_;
+      std::atomic<bool> is_active_;
+      tbb::concurrent_queue<StatusBus::Objects> q_;
+      rxcpp::subjects::subject<StatusBus::Objects> subject_;
+      std::thread worker_;
     };
   }  // namespace torii
 }  // namespace iroha

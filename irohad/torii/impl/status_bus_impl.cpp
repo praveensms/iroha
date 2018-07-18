@@ -13,17 +13,26 @@
 namespace iroha {
   namespace torii {
     StatusBusImpl::StatusBusImpl()
-        : coordinatior(rxcpp::observe_on_new_thread()
-                           .create_coordinator()
-                           .get_scheduler()) {}
+        : is_active_(true), worker_([this] {
+            StatusBus::Objects obj;
+            while (this->is_active_) {
+              while (not this->q_.empty() and this->q_.try_pop(obj)) {
+                this->subject_.get_subscriber().on_next(obj);
+              }
+            }
+          }) {}
+
+    StatusBusImpl::~StatusBusImpl() {
+      is_active_ = false;
+      worker_.join();
+    }
 
     void StatusBusImpl::publish(StatusBus::Objects resp) {
-      std::lock_guard<std::mutex> lock(m_);
-      statuses_.get_subscriber().on_next(std::move(resp));
+      q_.push(std::move(resp));
     }
 
     rxcpp::observable<StatusBus::Objects> StatusBusImpl::statuses() {
-      return statuses_.get_observable().subscribe_on(coordinatior);
+      return subject_.get_observable();
     }
   }  // namespace torii
 
