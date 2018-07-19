@@ -93,7 +93,7 @@ namespace torii {
                   std::make_shared<shared_model::proto::Transaction>(
                       std::move(iroha_tx.value)));
 
-              this->addTxToCacheAndLog(
+              this->pushStatus(
                   "Torii", std::move(tx_hash), std::move(response));
             },
             [this, &request](const auto &error) {
@@ -115,7 +115,7 @@ namespace torii {
                   iroha::protocol::TxStatus::STATELESS_VALIDATION_FAILED);
               response.set_error_message(std::move(error.error));
 
-              this->addTxToCacheAndLog(
+              this->pushStatus(
                   "Torii", std::move(tx_hash), std::move(response));
             });
   }
@@ -150,7 +150,7 @@ namespace torii {
                 // Send transaction to iroha
                 tx_processor_->transactionHandle(tx);
 
-                this->addTxToCacheAndLog(
+                this->pushStatus(
                     "ToriiList", std::move(tx_hash), std::move(response));
               });
             },
@@ -187,7 +187,7 @@ namespace torii {
                         iroha::protocol::TxStatus::STATELESS_VALIDATION_FAILED);
                     response.set_error_message(sequence_error);
 
-                    this->addTxToCacheAndLog(
+                    this->pushStatus(
                         "ToriiList", std::move(hash), std::move(response));
                   });
             });
@@ -216,16 +216,15 @@ namespace torii {
       response.CopyFrom(*resp);
     } else {
       response.set_tx_hash(request.tx_hash());
-      if (storage_->getBlockQuery()->hasTxWithHash(
-              shared_model::crypto::Hash(request.tx_hash()))) {
+      auto hash = shared_model::crypto::Hash(request.tx_hash());
+      if (storage_->getBlockQuery()->hasTxWithHash(hash)) {
         response.set_tx_status(iroha::protocol::TxStatus::COMMITTED);
+        cache_->addItem(std::move(hash), response);
       } else {
         log_->warn("Asked non-existing tx: {}",
                    iroha::bytestringToHexstring(request.tx_hash()));
         response.set_tx_status(iroha::protocol::TxStatus::NOT_RECEIVED);
       }
-      this->addTxToCacheAndLog(
-          "Status", std::move(tx_hash), std::move(response));
     }
   }
 
@@ -360,7 +359,7 @@ namespace torii {
     }
   }
 
-  void CommandService::addTxToCacheAndLog(
+  void CommandService::pushStatus(
       const std::string &who,
       const shared_model::crypto::Hash &hash,
       const iroha::protocol::ToriiResponse &response) {

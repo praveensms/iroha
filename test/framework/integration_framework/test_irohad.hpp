@@ -46,8 +46,7 @@ namespace integration_framework {
                  vote_delay,
                  load_delay,
                  keypair,
-                 is_mst_supported,
-                 true) {}
+                 is_mst_supported) {}
 
     auto &getCommandService() {
       return command_service;
@@ -63,6 +62,10 @@ namespace integration_framework {
 
     auto &getCryptoSigner() {
       return crypto_signer_;
+    }
+
+    auto getStatusBus() {
+      return status_bus_;
     }
 
     void run() override {

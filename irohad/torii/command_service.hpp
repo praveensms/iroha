@@ -153,9 +153,9 @@ namespace torii {
     inline void handleEvents(rxcpp::composite_subscription &subscription,
                              rxcpp::schedulers::run_loop &run_loop);
 
-    void addTxToCacheAndLog(const std::string &who,
-                            const shared_model::crypto::Hash &hash,
-                            const iroha::protocol::ToriiResponse &response);
+    void pushStatus(const std::string &who,
+                    const shared_model::crypto::Hash &hash,
+                    const iroha::protocol::ToriiResponse &response);
 
    private:
     using CacheType = iroha::cache::Cache<shared_model::crypto::Hash,

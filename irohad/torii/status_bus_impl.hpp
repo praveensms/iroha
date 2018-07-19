@@ -13,35 +13,30 @@
 #include <thread>
 
 #include <tbb/concurrent_queue.h>
+#include "logger/logger.hpp"
 
 namespace iroha {
   namespace torii {
     /**
-     * StatusBus implementation that support syncronous and asynchronous way of
-     * passing objects
+     * StatusBus implementation
      */
     class StatusBusImpl : public StatusBus {
      public:
-      /**
-       * @param is_sync defines wether status bus should be synchronous
-       */
-      StatusBusImpl(bool is_sync = false);
+      StatusBusImpl();
       ~StatusBusImpl();
 
       void publish(StatusBus::Objects) override;
       rxcpp::observable<StatusBus::Objects> statuses() override;
 
-     protected:
+     private:
       void update();
 
-     private:
-      const bool is_sync_;
       std::atomic<bool> is_active_;
       tbb::concurrent_queue<StatusBus::Objects> q_;
       rxcpp::subjects::subject<StatusBus::Objects> subject_;
       StatusBus::Objects obj_;
+      logger::Logger log_;
       std::thread worker_;
-      std::mutex m_;
     };
   }  // namespace torii
 }  // namespace iroha

@@ -7,30 +7,21 @@
 
 namespace iroha {
   namespace torii {
-    StatusBusImpl::StatusBusImpl(bool is_sync)
-        : is_sync_(is_sync), is_active_(true) {
-      if (not is_sync_) {
-        worker_ = std::thread([this] {
-          do {
-            this->update();
-          } while (this->is_active_);
-        });
-      }
-    }
+    StatusBusImpl::StatusBusImpl()
+        : is_active_(true), log_(logger::log("StatusBus")), worker_([this] {
+            do {
+              this->update();
+            } while (this->is_active_);
+          }) {}
 
     StatusBusImpl::~StatusBusImpl() {
       is_active_ = false;
-      if (not is_sync_) {
-        worker_.join();
-      }
+      worker_.join();
     }
 
     void StatusBusImpl::publish(StatusBus::Objects resp) {
+      log_->info("Publish {}", resp->toString());
       q_.push(std::move(resp));
-      if (is_sync_) {
-        std::lock_guard<std::mutex> lock(m_);
-        update();
-      }
     }
 
     void StatusBusImpl::update() {
@@ -40,7 +31,9 @@ namespace iroha {
     }
 
     rxcpp::observable<StatusBus::Objects> StatusBusImpl::statuses() {
-      return subject_.get_observable();
+      return subject_.get_observable().tap([this](StatusBus::Objects s) {
+        this->log_->info("Statuses {}", s->toString());
+      });
     }
   }  // namespace torii
 

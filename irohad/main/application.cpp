@@ -49,8 +49,7 @@ Irohad::Irohad(const std::string &block_store_dir,
                std::chrono::milliseconds vote_delay,
                std::chrono::milliseconds load_delay,
                const shared_model::crypto::Keypair &keypair,
-               bool is_mst_supported,
-               bool is_synced)
+               bool is_mst_supported)
     : block_store_dir_(block_store_dir),
       pg_conn_(pg_conn),
       torii_port_(torii_port),
@@ -60,7 +59,6 @@ Irohad::Irohad(const std::string &block_store_dir,
       vote_delay_(vote_delay),
       load_delay_(load_delay),
       is_mst_supported_(is_mst_supported),
-      is_synced_(is_synced),
       keypair(keypair) {
   log_ = logger::log("IROHAD");
   log_->info("created");
@@ -266,15 +264,14 @@ void Irohad::initMstProcessor() {
  * Initializing transaction command service
  */
 void Irohad::initTransactionCommandService() {
-  auto status_bus = std::static_pointer_cast<StatusBus>(
-      std::make_shared<StatusBusImpl>(is_synced_));
+  status_bus_ = std::make_shared<StatusBusImpl>();
   auto tx_processor = std::make_shared<TransactionProcessorImpl>(
-      pcs, mst_processor, status_bus);
+      pcs, mst_processor, status_bus_);
 
   command_service =
       std::make_shared<::torii::CommandService>(tx_processor,
                                                 storage,
-                                                status_bus,
+                                                status_bus_,
                                                 std::chrono::seconds(1),
                                                 2 * proposal_delay_);
 
