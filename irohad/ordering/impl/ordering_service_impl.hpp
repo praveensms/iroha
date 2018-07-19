@@ -14,6 +14,7 @@
 #include "logger/logger.hpp"
 #include "network/ordering_service.hpp"
 #include "ordering.grpc.pb.h"
+#include "interfaces/iroha_internal/proposal_factory.hpp"
 
 namespace iroha {
 
@@ -49,6 +50,7 @@ namespace iroha {
           std::shared_ptr<network::OrderingServiceTransport> transport,
           std::shared_ptr<ametsuchi::OrderingServicePersistentState>
               persistent_state,
+          std::shared_ptr<shared_model::interface::ProposalFactory> factory,
           bool is_async = true);
 
       /**
@@ -118,6 +120,8 @@ namespace iroha {
        * Mutex for incoming transactions
        */
       std::mutex mutex_;
+
+      std::shared_ptr<shared_model::interface::ProposalFactory> factory_;
 
       logger::Logger log_;
     };
