@@ -18,11 +18,13 @@
 #define IROHA_ORDERING_GATE_TRANSPORT_GRPC_H
 
 #include <google/protobuf/empty.pb.h>
+#include <backend/protobuf/proto_proposal_factory.hpp>
 
 #include "logger/logger.hpp"
 #include "network/impl/async_grpc_client.hpp"
 #include "network/ordering_gate_transport.hpp"
 #include "ordering.grpc.pb.h"
+#include "validators/default_validator.hpp"
 
 namespace shared_model {
   namespace interface {
@@ -53,6 +55,8 @@ namespace iroha {
      private:
       std::weak_ptr<iroha::network::OrderingGateNotification> subscriber_;
       std::unique_ptr<proto::OrderingServiceTransportGrpc::Stub> client_;
+      std::shared_ptr<shared_model::proto::ProtoProposalFactory<
+          shared_model::validation::DefaultProposalValidator>> factory_;
     };
 
   }  // namespace ordering
