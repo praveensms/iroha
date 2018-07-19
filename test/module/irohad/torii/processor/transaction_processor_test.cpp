@@ -7,8 +7,10 @@
 #include "builders/protobuf/common_objects/proto_signature_builder.hpp"
 #include "builders/protobuf/proposal.hpp"
 #include "builders/protobuf/transaction.hpp"
+#include "framework/batch_helper.hpp"
 #include "framework/specified_visitor.hpp"
 #include "framework/test_subscriber.hpp"
+#include "interfaces/iroha_internal/transaction_sequence.hpp"
 #include "module/irohad/multi_sig_transactions/mst_mocks.hpp"
 #include "module/irohad/network/network_mocks.hpp"
 #include "module/irohad/torii/torii_mocks.hpp"
@@ -140,6 +142,64 @@ TEST_F(TransactionProcessorTest, TransactionProcessorOnProposalTest) {
 
   SCOPED_TRACE("Stateless valid status verification");
   validateStatuses<shared_model::interface::StatelessValidTxResponse>(txs);
+}
+
+/**
+ * @given transactions from the same batch
+ * @when transactions sequence is created and propagated @and all transactions
+ * were returned by pcs in proposal notifier
+ * @then all transactions have stateless valid status
+ */
+TEST_F(TransactionProcessorTest, TransactionProcessorOnProposalBatchTest) {
+  using namespace shared_model::validation;
+  using TxValidator =
+      TransactionValidator<FieldValidator,
+                           CommandValidatorVisitor<FieldValidator>>;
+
+  using TxsValidator =
+      UnsignedTransactionsCollectionValidator<TxValidator, BatchOrderValidator>;
+
+  auto transactions =
+      framework::batch::createValidBatch(proposal_size).transactions();
+
+  EXPECT_CALL(*status_bus, publish(_))
+      .Times(proposal_size)
+      .WillRepeatedly(testing::Invoke([this](auto response) {
+        status_map[response->transactionHash()] = response;
+      }));
+
+  auto transaction_sequence_result =
+      shared_model::interface::TransactionSequence::createTransactionSequence(
+          transactions, TxsValidator());
+  auto transaction_sequence =
+      framework::expected::val(transaction_sequence_result).value().value;
+
+  EXPECT_CALL(*mp, propagateTransactionImpl(_)).Times(0);
+  EXPECT_CALL(*pcs, propagate_batch(_))
+      .Times(transaction_sequence.batches().size());
+
+  tp->transactionSequenceHandle(transaction_sequence);
+
+  // create proposal from sequence transactions and notify about it
+  std::vector<shared_model::proto::Transaction> proto_transactions;
+
+  std::transform(
+      transactions.begin(),
+      transactions.end(),
+      std::back_inserter(proto_transactions),
+      [](const auto tx) {
+        return *std::static_pointer_cast<shared_model::proto::Transaction>(tx);
+      });
+
+  auto proposal = std::make_shared<shared_model::proto::Proposal>(
+      TestProposalBuilder().transactions(proto_transactions).build());
+
+  prop_notifier.get_subscriber().on_next(proposal);
+  prop_notifier.get_subscriber().on_completed();
+
+  SCOPED_TRACE("Stateless valid status verification");
+  validateStatuses<shared_model::interface::StatelessValidTxResponse>(
+      proto_transactions);
 }
 
 /**

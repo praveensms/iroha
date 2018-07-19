@@ -63,7 +63,10 @@ class CustomPeerCommunicationServiceMock : public PeerCommunicationService {
 
   void propagate_transaction(
       std::shared_ptr<const shared_model::interface::Transaction> transaction)
-      override {}
+      const override {}
+
+  void propagate_batch(
+      const shared_model::interface::TransactionBatch &batch) const override {}
 
   rxcpp::observable<std::shared_ptr<shared_model::interface::Proposal>>
   on_proposal() const override {
