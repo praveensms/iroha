@@ -44,6 +44,7 @@ add_library(status_bus
     )
 target_link_libraries(status_bus
     rxcpp
+    logger
     shared_model_interfaces
     tbb
     )
