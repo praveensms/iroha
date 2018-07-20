@@ -24,6 +24,7 @@ target_link_libraries(chain_validation_test
 
 addtest(stateful_validator_test stateful_validator_test.cpp)
 target_link_libraries(stateful_validator_test
-  stateful_validator
-  shared_model_default_builders
-  )
+    stateful_validator
+    shared_model_default_builders
+    shared_model_proto_backend
+    )
