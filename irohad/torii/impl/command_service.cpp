@@ -136,8 +136,9 @@ namespace torii {
                 iroha::expected::Value<
                     shared_model::interface::TransactionSequence>
                     &tx_sequence) {
-              auto txs = tx_sequence.value.transactions();
-              std::for_each(txs.begin(), txs.end(), [this](auto &tx) {
+              tx_processor_->transactionSequenceHandle(tx_sequence.value);
+              const auto &txs = tx_sequence.value.transactions();
+              std::for_each(txs.begin(), txs.end(), [this](const auto &tx) {
                 auto tx_hash = tx->hash();
                 if (cache_->findItem(tx_hash) and tx->quorum() < 2) {
                   log_->warn("Found transaction {} in cache, ignoring",
@@ -151,10 +152,6 @@ namespace torii {
                     shared_model::crypto::toBinaryString(tx_hash));
                 response.set_tx_status(
                     iroha::protocol::TxStatus::STATELESS_VALIDATION_SUCCESS);
-
-                // Send transaction to iroha
-                tx_processor_->transactionHandle(tx);
-
                 this->addTxToCacheAndLog(
                     "ToriiList", std::move(tx_hash), std::move(response));
               });
