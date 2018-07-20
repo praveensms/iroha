@@ -8,33 +8,14 @@
 namespace iroha {
   namespace torii {
     StatusBusImpl::StatusBusImpl()
-        : is_active_(true), log_(logger::log("StatusBus")), worker_([this] {
-            do {
-              this->update();
-            } while (this->is_active_);
-          }) {}
-
-    StatusBusImpl::~StatusBusImpl() {
-      is_active_ = false;
-      worker_.join();
-    }
+        : worker_(rxcpp::observe_on_new_thread()), subject_(worker_) {}
 
     void StatusBusImpl::publish(StatusBus::Objects resp) {
-      log_->info("Publish {}", resp->toString());
-      q_.push(std::move(resp));
-    }
-
-    void StatusBusImpl::update() {
-      while (not q_.empty() and q_.try_pop(obj_)) {
-        subject_.get_subscriber().on_next(obj_);
-      }
+      subject_.get_subscriber().on_next(resp);
     }
 
     rxcpp::observable<StatusBus::Objects> StatusBusImpl::statuses() {
-      return subject_.get_observable().tap([this](StatusBus::Objects s) {
-        this->log_->info("Statuses {}", s->toString());
-      });
+      return subject_.get_observable();
     }
   }  // namespace torii
-
 }  // namespace iroha
