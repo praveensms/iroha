@@ -441,7 +441,6 @@ pipeline {
             success {
               script {
                 def artifacts = load ".jenkinsci/artifacts.groovy"
-                def commit = env.GIT_COMMIT
                 if (params.JavaBindings) {
                   javaBindingsFilePaths = [ '/tmp/${GIT_COMMIT}/bindings-artifact/java-bindings-*.zip' ]
                   artifacts.uploadArtifacts(javaBindingsFilePaths, '/iroha/bindings/java')
@@ -471,12 +470,12 @@ pipeline {
           steps {
             script {
               def bindings = load ".jenkinsci/bindings.groovy"
+              def wheels = load ".jenkinsci/python-wheels.groovy"
               if (params.JavaBindings) {
                 bindings.doJavaBindings('mac', params.JBPackageName, params.JBBuildType)
               }
               if (params.PythonBindings) {
                 bindings.doPythonBindings('mac', params.PBBuildType)
-                def wheels = load ".jenkinsci/python-wheels.groovy"
                 wheels.doPythonWheels('mac', params.PBBuildType)
               }
             }
@@ -485,7 +484,6 @@ pipeline {
             success {
               script {
                 def artifacts = load ".jenkinsci/artifacts.groovy"
-                def commit = env.GIT_COMMIT
                 if (params.JavaBindings) {
                   javaBindingsFilePaths = [ '/tmp/${GIT_COMMIT}/bindings-artifact/java-bindings-*.zip' ]
                   artifacts.uploadArtifacts(javaBindingsFilePaths, '/iroha/bindings/java')
@@ -511,12 +509,12 @@ pipeline {
           steps {
             script {
               def bindings = load ".jenkinsci/bindings.groovy"
+              def wheels = load ".jenkinsci/python-wheels.groovy"
               if (params.JavaBindings) {
                 bindings.doJavaBindings('windows', params.JBPackageName, params.JBBuildType)
               }
               if (params.PythonBindings) {
                 bindings.doPythonBindings('windows', params.PBBuildType)
-                def wheels = load ".jenkinsci/python-wheels.groovy"
                 wheels.doPythonWheels('windows', params.PBBuildType)
               }
             }
@@ -525,7 +523,6 @@ pipeline {
             success {
               script {
                 def artifacts = load ".jenkinsci/artifacts.groovy"
-                def commit = env.GIT_COMMIT
                 if (params.JavaBindings) {
                   javaBindingsFilePaths = [ '/tmp/${GIT_COMMIT}/bindings-artifact/java-bindings-*.zip' ]
                   artifacts.uploadArtifacts(javaBindingsFilePaths, '/iroha/bindings/java')
