@@ -122,3 +122,22 @@ TEST_F(AmountTest, LeadingZeroPlusTest) {
         FAIL() << *e.error;
       });
 }
+
+TEST_F(AmountTest, PrecisionOverflow) {
+  const std::string &uint256_halfmax =
+      "723700557733226221397318656304299424082937404160253525246609900049457060"
+      "2495";
+
+  shared_model::interface::Amount a(uint256_halfmax), b("1.00");
+
+  auto c = a + b;
+  c.match(
+      [](const iroha::expected::Value<
+          std::shared_ptr<shared_model::interface::Amount>> &c_value) {
+        FAIL() << c_value.value->intValue().str();
+      },
+      [](const iroha::expected::Error<std::shared_ptr<std::string>> &e) {
+        std::cout << *e.error << std::endl;
+        SUCCEED() << *e.error;
+      });
+}

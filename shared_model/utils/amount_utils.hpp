@@ -29,9 +29,6 @@ namespace shared_model {
   }  // namespace interface
 
   namespace detail {
-    boost::multiprecision::uint256_t increaseValuePrecision(
-        const boost::multiprecision::uint256_t &value, int degree);
-
     /**
      * Sums up two amounts.
      * Result is returned
