@@ -17,8 +17,8 @@
 #include "module/shared_model/builders/protobuf/test_block_builder.hpp"
 #include "module/shared_model/builders/protobuf/test_proposal_builder.hpp"
 #include "module/shared_model/builders/protobuf/test_transaction_builder.hpp"
+#include "torii/impl/status_bus_impl.hpp"
 #include "torii/processor/transaction_processor_impl.hpp"
-#include "torii/status_bus_impl.hpp"
 
 using namespace iroha;
 using namespace iroha::network;

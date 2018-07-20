@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include "torii/status_bus_impl.hpp"
+#include "torii/impl/status_bus_impl.hpp"
 
 namespace iroha {
   namespace torii {
