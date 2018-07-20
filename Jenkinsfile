@@ -415,8 +415,10 @@ pipeline {
                   }
                 }
                 if (params.PythonBindings) {
-                  iC.inside("-v /tmp/${env.GIT_COMMIT}/bindings-artifact:/tmp/bindings-artifact") {
+                  iC.inside("-v /tmp/${env.GIT_COMMIT}/bindings-artifact:/tmp/${env.GIT_COMMIT}/bindings-artifact") {
                     bindings.doPythonBindings('linux', params.PBBuildType)
+                    def wheels = load ".jenkinsci/python-wheels.groovy"
+                    wheels.doPythonWheels('linux', params.PBBuildType)
                   }
                 }
               }
@@ -465,7 +467,7 @@ pipeline {
             beforeAgent true
             expression { return params.x86_64_macos }
           }
-          agent { label 'mac-173' }
+          agent { label 'mac' }
           steps {
             script {
               def bindings = load ".jenkinsci/bindings.groovy"
@@ -474,6 +476,8 @@ pipeline {
               }
               if (params.PythonBindings) {
                 bindings.doPythonBindings('mac', params.PBBuildType)
+                def wheels = load ".jenkinsci/python-wheels.groovy"
+                wheels.doPythonWheels('mac', params.PBBuildType)
               }
             }
           }
@@ -512,6 +516,8 @@ pipeline {
               }
               if (params.PythonBindings) {
                 bindings.doPythonBindings('windows', params.PBBuildType)
+                def wheels = load ".jenkinsci/python-wheels.groovy"
+                wheels.doPythonWheels('windows', params.PBBuildType)
               }
             }
           }
